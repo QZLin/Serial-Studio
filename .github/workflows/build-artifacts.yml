@@ -90,13 +90,15 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Cannot run clang-cl' }
 
       - name: Configure GPLv3 Release
+        env:
+          # Append target macros without replacing CMake's /EHsc and /GR defaults.
+          CFLAGS: /DWINVER=0x0A00 /D_WIN32_WINNT=0x0A00
+          CXXFLAGS: /DWINVER=0x0A00 /D_WIN32_WINNT=0x0A00
         run: |
           # LuaJIT defaults WINVER to XP unless the target baseline is explicit.
           cmake -S . -B build -G Ninja `
             -DCMAKE_C_COMPILER=clang-cl `
             -DCMAKE_CXX_COMPILER=clang-cl `
-            "-DCMAKE_C_FLAGS=/DWINVER=0x0A00 /D_WIN32_WINNT=0x0A00" `
-            "-DCMAKE_CXX_FLAGS=/DWINVER=0x0A00 /D_WIN32_WINNT=0x0A00" `
             -DCMAKE_BUILD_TYPE=Release `
             -DBUILD_GPL3=ON `
             -DBUILD_COMMERCIAL=OFF `
