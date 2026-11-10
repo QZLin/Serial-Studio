@@ -1,0 +1,166 @@
+# SPDX-FileCopyrightText: 2026 QZLin
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Fork builds use public Qt packages and the GPL edition. No Qt account,
+# commercial license, signing key, private icon repository, or PAT is needed.
+name: Build Windows Artifact (GPLv3)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths-ignore:
+      - '**.md'
+      - 'doc/**'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'doc/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-gpl3-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  QT_VERSION: '6.11.2'
+  QTFRAMEWORK_BYPASS_LICENSE_CHECK: 'true'
+  EXECUTABLE: Serial-Studio-GPL3
+  CMAKE_BUILD_PARALLEL_LEVEL: '4'
+
+jobs:
+  windows-portable:
+    name: Windows x64 portable
+    # Upstream keeps its release workflow; forks get this secret-free build.
+    if: github.repository != 'Serial-Studio/Serial-Studio'
+    runs-on: windows-2022
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - name: Install public Qt binaries
+        uses: jurplel/install-qt-action@b344308e4483fc892e0d27b3cd1b173ebdd95f06 # v4 branch
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: windows
+          target: desktop
+          arch: win64_msvc2022_64
+          modules: >-
+            qt5compat qtconnectivity qtgraphs qtpositioning qtquick3d
+            qtquicktimeline qtserialport qtshadertools qtwebchannel
+            qtwebengine qtwebsockets
+          cache: true
+          cache-key-prefix: fork-gpl3-qt-v1
+
+      - name: Install CMake and Ninja
+        uses: lukka/get-cmake@fffaaafeea488556c2c12dad60690008bc1caacb # v4.4.2
+        with:
+          useLocalCache: false
+          useCloudCache: false
+
+      - name: Set up MSVC development environment
+        uses: TheMrMilchmann/setup-msvc-dev@368ef7d1ee4d1171b31d4a7f67f4d954f903f5a9 # v4.1.0
+        with:
+          arch: x64
+
+      - name: Select VS-bundled clang-cl
+        run: |
+          $clangDir = Join-Path $env:VCINSTALLDIR 'Tools\Llvm\x64\bin'
+          $compiler = Join-Path $clangDir 'clang-cl.exe'
+          if (-not (Test-Path $compiler)) { throw "clang-cl not found: $compiler" }
+          Add-Content -Path $env:GITHUB_PATH -Value $clangDir
+          & $compiler --version
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot run clang-cl' }
+
+      - name: Configure GPLv3 Release
+        run: |
+          cmake -S . -B build -G Ninja `
+            -DCMAKE_C_COMPILER=clang-cl `
+            -DCMAKE_CXX_COMPILER=clang-cl `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DBUILD_GPL3=ON `
+            -DBUILD_COMMERCIAL=OFF `
+            -DENABLE_GRPC=OFF `
+            -DWITH_WEBENGINE=ON `
+            -DSS_REQUIRE_ICON_ART=OFF `
+            -DSS_UNITY_BUILD=ON `
+            -DSS_UNITY_BATCH_SIZE=32 `
+            -DSS_INAPP_TESTS=ON `
+            -DSS_PACKAGE_TYPE=portable `
+            -DSS_BUILD_COMMIT=$env:GITHUB_SHA `
+            -DPRODUCTION_OPTIMIZATION=ON `
+            -DENABLE_HARDENING=ON `
+            -DENABLE_PGO=OFF
+          if ($LASTEXITCODE -ne 0) { throw 'CMake configure failed' }
+
+      - name: Build on GitHub runner
+        run: |
+          cmake --build build --config Release
+          if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
+
+      - name: Deploy executable, Qt libraries and runtime
+        run: |
+          cmake --install build --config Release --prefix "$env:GITHUB_WORKSPACE/dist/$env:EXECUTABLE"
+          if ($LASTEXITCODE -ne 0) { throw 'Deployment failed' }
+
+      - name: Create portable ZIP
+        id: package
+        run: ./scripts/ci/package-windows-gpl3.ps1
+
+      - name: Test the extracted package without the Qt SDK
+        timeout-minutes: 10
+        run: ./scripts/ci/test-windows-portable.ps1 -Archive '${{ steps.package.outputs.archive }}'
+
+      - name: Upload runnable package
+        id: artifact
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: ${{ steps.package.outputs.name }}
+          path: |
+            ${{ steps.package.outputs.archive }}
+            artifacts/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Upload corresponding application source
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: Serial-Studio-GPL3-Source-${{ github.sha }}
+          path: ${{ steps.package.outputs.source }}
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Add download instructions to run summary
+        env:
+          ARTIFACT_URL: ${{ steps.artifact.outputs.artifact-url }}
+          PACKAGE_NAME: ${{ steps.package.outputs.name }}
+        run: |
+          @"
+          ## Windows x64 GPLv3 portable build
+          - Package: **$env:PACKAGE_NAME**
+          - [Download the artifact]($env:ARTIFACT_URL) (GitHub sign-in required).
+          - Unzip the GitHub artifact, then unzip the portable ZIP inside it.
+          - Run **Serial Studio GPLv3.bat**, or **bin/Serial-Studio-GPL3.exe**.
+          - Qt DLLs, QML/plugins, MSVC runtime, license notices and build metadata are included.
+          - The extracted ZIP passed the QML self-test and GUI startup smoke test without the Qt SDK on PATH.
+          - This is an unsigned GPLv3 build, not the commercial Pro edition. Artifacts expire after 30 days.
+          "@ | Add-Content -Path $env:GITHUB_STEP_SUMMARY -Encoding utf8
+
+      - name: Upload smoke-test logs
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: Windows-GPLv3-smoke-logs-${{ github.run_id }}
+          path: artifacts/*.log
+          if-no-files-found: ignore
+          retention-days: 14

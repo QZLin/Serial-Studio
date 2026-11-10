@@ -104,11 +104,15 @@ env:
 
 jobs:
 
+  # This upstream release matrix needs commercial Qt/license/signing secrets.
+  # Forks build the secret-free GPL edition with build-artifacts.yml instead.
+
 #---------------------------------------------------------------------------------------------------
 # GNU/Linux build (x86_64)
 #---------------------------------------------------------------------------------------------------
 
   build-linux:
+    if: github.repository == 'Serial-Studio/Serial-Studio'
     runs-on: ubuntu-24.04
     name: '🐧 Linux Build (x86_64)'
     permissions:
@@ -566,6 +570,7 @@ jobs:
 #---------------------------------------------------------------------------------------------------
 
   build-linux-arm64:
+    if: github.repository == 'Serial-Studio/Serial-Studio'
     runs-on: ubuntu-24.04-arm
     name: '🐧 Linux Build (arm64)'
     permissions:
@@ -888,6 +893,7 @@ jobs:
 #---------------------------------------------------------------------------------------------------
 
   build-macos-arm64:
+    if: github.repository == 'Serial-Studio/Serial-Studio'
     runs-on: macos-latest
     name: '🍎 macOS Build (arm64)'
     permissions:
@@ -1174,6 +1180,7 @@ jobs:
 #---------------------------------------------------------------------------------------------------
 
   build-macos-intel:
+    if: github.repository == 'Serial-Studio/Serial-Studio'
     runs-on: macos-latest
     name: '🍎 macOS Build (x86_64)'
     permissions:
@@ -1311,6 +1318,7 @@ jobs:
 #---------------------------------------------------------------------------------------------------
 
   build-macos:
+    if: github.repository == 'Serial-Studio/Serial-Studio'
     runs-on: macos-latest
     name: '🍎 macOS Build (universal)'
     needs:
@@ -1545,6 +1553,7 @@ jobs:
 #---------------------------------------------------------------------------------------------------
 
   build-windows:
+    if: github.repository == 'Serial-Studio/Serial-Studio'
     runs-on: windows-latest
     name: '🧊 Windows Build (x86_64)'
     permissions:
@@ -2075,7 +2084,7 @@ jobs:
     # branch (and every same-repo PR) republished it, and two runs racing each other left the
     # tag pointing at one build with another's assets.
     #
-    if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
+    if: github.repository == 'Serial-Studio/Serial-Studio' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/'))
     concurrency:
       group: release-${{ github.ref }}
       cancel-in-progress: false
@@ -2155,6 +2164,7 @@ jobs:
 #---------------------------------------------------------------------------------------------------
 
   lint:
+    if: github.repository == 'Serial-Studio/Serial-Studio'
     runs-on: ubuntu-24.04
     name: '🔬 Lint'
     permissions:
@@ -2353,6 +2363,7 @@ jobs:
 #---------------------------------------------------------------------------------------------------
 
   sanitize:
+    if: github.repository == 'Serial-Studio/Serial-Studio'
     continue-on-error: true
     runs-on: ubuntu-24.04
     name: '🧫 Sanitizers (ASan + UBSan, Pro)'
@@ -2503,6 +2514,7 @@ jobs:
 #---------------------------------------------------------------------------------------------------
 
   sanitize-tsan:
+    if: github.repository == 'Serial-Studio/Serial-Studio'
     continue-on-error: true
     runs-on: ubuntu-24.04
     name: '🧫 Sanitizers (TSan, Pro)'
@@ -2612,6 +2624,7 @@ jobs:
 #---------------------------------------------------------------------------------------------------
 
   build-gpl3:
+    if: github.repository == 'Serial-Studio/Serial-Studio'
     runs-on: ubuntu-24.04
     name: '🐧 GPLv3 Build Gate'
     permissions:
@@ -2678,6 +2691,7 @@ jobs:
 # build-gpl3's toolchain and Qt-cache steps (restore-only; build-linux owns the save half).
 #
   build-core-libraries:
+    if: github.repository == 'Serial-Studio/Serial-Studio'
     runs-on: ubuntu-24.04
     name: '🧱 Core Libraries Build Alone'
     permissions:
@@ -2745,6 +2759,7 @@ jobs:
 #
 
   test-linux:
+    if: github.repository == 'Serial-Studio/Serial-Studio'
     name: '🧪 Test'
     needs: build-linux
     permissions:
@@ -2762,6 +2777,7 @@ jobs:
       timeout_method: signal
 
   test-linux-arm64:
+    if: github.repository == 'Serial-Studio/Serial-Studio'
     name: '🧪 Test'
     needs: build-linux-arm64
     permissions:
@@ -2779,6 +2795,7 @@ jobs:
       timeout_method: signal
 
   test-macos:
+    if: github.repository == 'Serial-Studio/Serial-Studio'
     name: '🧪 Test'
     needs: build-macos
     permissions:
@@ -2796,6 +2813,7 @@ jobs:
       timeout_method: signal
 
   test-windows:
+    if: github.repository == 'Serial-Studio/Serial-Studio'
     name: '🧪 Test'
     needs: build-windows
     permissions:
@@ -2817,6 +2835,7 @@ jobs:
 #---------------------------------------------------------------------------------------------------
 
   firmware:
+    if: github.repository == 'Serial-Studio/Serial-Studio'
     runs-on: ubuntu-24.04
     name: '📟 Firmware Library'
     timeout-minutes: 20
@@ -2909,7 +2928,7 @@ jobs:
     # library version is already there, so a release that did not bump the version publishes
     # nothing and cannot fail on a duplicate upload
     #
-    if: startsWith(github.ref, 'refs/tags/') && vars.FIRMWARE_PUBLISH == 'true'
+    if: github.repository == 'Serial-Studio/Serial-Studio' && (startsWith(github.ref, 'refs/tags/') && vars.FIRMWARE_PUBLISH == 'true')
     concurrency:
       group: firmware-publish
       cancel-in-progress: false
