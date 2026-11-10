@@ -132,7 +132,7 @@ $hash = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
 # Ship the exact checked-out application and vendored source separately, never
 # the build directory or any runner credentials / caches.
 $source = Join-Path 'artifacts' "$env:EXECUTABLE-$version-Source-$shortSha.zip"
-git archive --format=zip --output=$source $env:GITHUB_SHA
+git archive --format=zip "--output=$source" $env:GITHUB_SHA
 if ($LASTEXITCODE -ne 0) { throw 'Archiving the corresponding application source failed.' }
 
 "name=$name" | Add-Content $env:GITHUB_OUTPUT -Encoding utf8

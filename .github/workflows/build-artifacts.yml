@@ -64,7 +64,7 @@ jobs:
           arch: win64_msvc2022_64
           modules: >-
             qt5compat qtconnectivity qtgraphs qtpositioning qtquick3d
-            qtquicktimeline qtserialport qtshadertools qtwebchannel
+            qtquicktimeline qtserialport qtshadertools qttasktree qtwebchannel
             qtwebengine qtwebsockets
           cache: true
           cache-key-prefix: fork-gpl3-qt-v2
@@ -104,7 +104,7 @@ jobs:
             -DSS_UNITY_BATCH_SIZE=32 `
             -DSS_INAPP_TESTS=ON `
             -DSS_PACKAGE_TYPE=portable `
-            -DSS_BUILD_COMMIT=$env:GITHUB_SHA `
+            "-DSS_BUILD_COMMIT=$env:GITHUB_SHA" `
             -DPRODUCTION_OPTIMIZATION=ON `
             -DENABLE_HARDENING=ON `
             -DENABLE_PGO=OFF
