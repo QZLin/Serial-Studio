@@ -46,9 +46,18 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Set up Python for Qt installation
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.14'
+
       - name: Install public Qt binaries
         uses: jurplel/install-qt-action@b344308e4483fc892e0d27b3cd1b173ebdd95f06 # v4 branch
         with:
+          # aqt 3.3.0 predates Qt 6.11's per-architecture repository folders.
+          # This immutable upstream commit has the new layout support.
+          aqtsource: git+https://github.com/miurahr/aqtinstall.git@5a49f2b391ae8ee1d3c0dd87f8b33c1d49a4deb7
+          setup-python: false
           version: ${{ env.QT_VERSION }}
           host: windows
           target: desktop
@@ -58,7 +67,7 @@ jobs:
             qtquicktimeline qtserialport qtshadertools qtwebchannel
             qtwebengine qtwebsockets
           cache: true
-          cache-key-prefix: fork-gpl3-qt-v1
+          cache-key-prefix: fork-gpl3-qt-v2
 
       - name: Install CMake and Ninja
         uses: lukka/get-cmake@fffaaafeea488556c2c12dad60690008bc1caacb # v4.4.2
