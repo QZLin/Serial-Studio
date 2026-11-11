@@ -69,6 +69,24 @@ jobs:
           cache: true
           cache-key-prefix: fork-gpl3-qt-v2
 
+      - name: Set up Python for static checks
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install static-check dependencies
+        run: pip install --require-hashes -r tests/requirements.lock
+
+      - name: Run source and documentation gates
+        run: |
+          python scripts/code-verify.py --check
+          python scripts/sanitize-commit.py --check-format
+          python scripts/layer-verify.py
+          python scripts/claim-verify.py --quiet
+          python scripts/documentation-verify.py --quiet
+          python scripts/term-verify.py --summary
+
       - name: Install CMake and Ninja
         uses: lukka/get-cmake@fffaaafeea488556c2c12dad60690008bc1caacb # v4.4.2
         with:
@@ -108,6 +126,7 @@ jobs:
             -DSS_UNITY_BUILD=ON `
             -DSS_UNITY_BATCH_SIZE=32 `
             -DSS_INAPP_TESTS=ON `
+            -DSS_BUILD_TESTS=ON `
             -DSS_PACKAGE_TYPE=portable `
             "-DSS_BUILD_COMMIT=$env:GITHUB_SHA" `
             -DPRODUCTION_OPTIMIZATION=ON `
@@ -115,10 +134,15 @@ jobs:
             -DENABLE_PGO=OFF
           if ($LASTEXITCODE -ne 0) { throw 'CMake configure failed' }
 
-      - name: Build on GitHub runner
+      - name: Build application and Console log unit test on GitHub runner
         run: |
-          cmake --build build --config Release
+          cmake --build build --config Release --target $env:EXECUTABLE tst_gpl_console_log
           if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
+
+      - name: Run Console log unit test
+        run: |
+          ctest --test-dir build --output-on-failure -R '^tst_gpl_console_log$'
+          if ($LASTEXITCODE -ne 0) { throw 'Console log unit test failed' }
 
       - name: Deploy executable, Qt libraries and runtime
         run: |
@@ -166,7 +190,7 @@ jobs:
           - Unzip the GitHub artifact, then unzip the portable ZIP inside it.
           - Run **Serial Studio GPLv3.bat**, or **bin/Serial-Studio-GPL3.exe**.
           - Qt DLLs, QML/plugins, MSVC runtime, license notices and build metadata are included.
-          - The extracted ZIP passed the QML self-test and GUI startup smoke test without the Qt SDK on PATH.
+          - The extracted ZIP passed the GPL Console-log, QML and GUI startup tests without the Qt SDK on PATH.
           - This is an unsigned GPLv3 build, not the commercial Pro edition. Artifacts expire after 30 days.
           "@ | Add-Content -Path $env:GITHUB_STEP_SUMMARY -Encoding utf8
 

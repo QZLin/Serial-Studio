@@ -2956,6 +2956,17 @@ ss_add_unit_test(tst_mmcss_registration
           SerialStudio::Core
 )
 
+# Independent GPL Console transcript sink: ANSI filtering, UTF-8/BOM output,
+# per-device routing and collision-free session names.
+if(NOT BUILD_COMMERCIAL)
+  ss_add_unit_test(tst_gpl_console_log
+    SOURCES tst_gpl_console_log.cpp
+            ${SS_CORE_SRC}/Ui/Console/GplLogFiles.cpp
+    LIBS    Qt6::Core
+            SerialStudio::Core
+  )
+endif()
+
 #
 # Grow-only plot geometry (spec 0075, N4): a QSGGeometry has one pair of counts over one buffer,
 # so the old exact-fit allocate() freed and malloc'd hundreds of KB per curve per frame once the

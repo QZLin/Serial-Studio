@@ -64,4 +64,11 @@ public:
  */
 void runQmlInstantiationSuite(SuiteResult& result, const SuiteEnvironment& env);
 
+#ifndef BUILD_COMMERCIAL
+/**
+ * @brief Writes, closes and verifies an independent GPL serial Console transcript (post-root).
+ */
+void runGplConsoleLogSuite(SuiteResult& result, const SuiteEnvironment& env);
+#endif
+
 }  // namespace SelfTest

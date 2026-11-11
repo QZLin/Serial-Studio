@@ -506,8 +506,8 @@ void Misc::ModuleManager::stopFrameConsumerWorkers()
   IO::PipelineHost::instance().shutdown();
   DataModel::JsWatchdogThread::instance().shutdown();
   CSV::Export::instance().stopWorker();
-#ifdef BUILD_COMMERCIAL
   Console::Export::instance().stopWorker();
+#ifdef BUILD_COMMERCIAL
   MDF4::Export::instance().stopWorker();
 #endif
   API::Server::instance().stopWorker();

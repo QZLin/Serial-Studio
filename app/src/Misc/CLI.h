@@ -156,6 +156,8 @@ struct CliOptions {
     "Pin the kernel optimization level for this run only (auto, scalar, sse4, avx2, neon); "
     "overrides the saved preference, is not saved, unsupported values fall back to auto",
     "level"};
+  QCommandLineOption consoleExportOpt{"console-export",
+                                      "Enable serial Console transcript logging on startup"};
 #ifdef SS_INAPP_TESTS
   QCommandLineOption selftestOpt{"selftest", "Run the built-in self-test suites and exit"};
   QCommandLineOption selftestSuiteOpt{
@@ -174,8 +176,6 @@ struct CliOptions {
   QCommandLineOption csvExportOpt{"csv-export", "Enable CSV export immediately on startup (Pro)"};
   QCommandLineOption mdfExportOpt{"mdf-export", "Enable MDF4 export immediately on startup (Pro)"};
   QCommandLineOption sessionExportOpt{"session-export", "Enable historian export on startup (Pro)"};
-  QCommandLineOption consoleExportOpt{"console-export",
-                                      "Enable console log export on startup (Pro)"};
   QCommandLineOption actionsPanelOpt{"actions-panel",
                                      "Show the actions panel in operator runtime mode (Pro)"};
   QCommandLineOption fileTransmissionOpt{
@@ -333,6 +333,7 @@ public:
   [[nodiscard]] bool applyProjectAndAutoConnect(QApplication& app);
   void applyVisualizationOptions();
   void applyBusConfiguration();
+  void applyConsoleExportToggle();
 
 #ifdef BUILD_COMMERCIAL
   [[nodiscard]] QString deploymentPath() const;

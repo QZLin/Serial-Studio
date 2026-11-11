@@ -30,23 +30,27 @@
 #include <QUrl>
 
 #include "API/HandlerContext.h"
+#include "AppState.h"
+#include "Console/Handler.h"
 #include "Core/Bus/MessageBus.h"
 #include "Core/Bus/Messages.h"
 #include "Core/License.h"
+#include "Core/SerialStudio.h"
 #include "Core/Services.h"
 #include "Core/SSAssert.h"
+#include "Core/WorkspaceManager.h"
+#include "DataModel/FrameBuilder.h"
 #include "DataModel/PipelineModules.h"
+#include "DataModel/ProjectModel.h"
+#include "IO/ConnectionManager.h"
 #include "Misc/Utilities.h"
 
+#ifndef BUILD_COMMERCIAL
+#  include "Console/GplLogExport.h"
+#endif
+
 #ifdef BUILD_COMMERCIAL
-#  include "AppState.h"
-#  include "Console/Handler.h"
 #  include "Core/Licensing/CommercialToken.h"
-#  include "Core/SerialStudio.h"
-#  include "Core/WorkspaceManager.h"
-#  include "DataModel/FrameBuilder.h"
-#  include "DataModel/ProjectModel.h"
-#  include "IO/ConnectionManager.h"
 #  include "Replay/PlayerState.h"
 #endif
 
@@ -208,6 +212,7 @@ Console::Export::Export()
   , m_exportRequested(false)
   , m_licenseReplay(false)
   , m_bus(nullptr)
+  , m_gplExporter(std::make_unique<GplLogExport>())
 #endif
 {
 #ifdef BUILD_COMMERCIAL
@@ -223,6 +228,12 @@ Console::Export::Export()
       const QScopedValueRollback<bool> replay(m_licenseReplay, true);
       setExportEnabled(m_exportRequested);
     });
+#else
+  connect(m_gplExporter.get(),
+          &GplLogExport::openChanged,
+          this,
+          &Export::onGplOpenChanged,
+          Qt::QueuedConnection);
 #endif
 
   {
@@ -263,7 +274,7 @@ bool Console::Export::isOpen() const
 #ifdef BUILD_COMMERCIAL
   return m_isOpen.load(std::memory_order_relaxed);
 #else
-  return false;
+  return m_gplExporter && m_gplExporter->isOpen();
 #endif
 }
 
@@ -275,7 +286,7 @@ bool Console::Export::exportEnabled() const
 #ifdef BUILD_COMMERCIAL
   return consumerEnabled();
 #else
-  return false;
+  return m_gplExporter && m_gplExporter->enabled();
 #endif
 }
 
@@ -287,6 +298,22 @@ void Console::Export::closeFile()
 #ifdef BUILD_COMMERCIAL
   auto* worker = static_cast<ExportWorker*>(m_worker);
   QMetaObject::invokeMethod(worker, "close", Qt::QueuedConnection);
+#else
+  if (m_gplExporter)
+    m_gplExporter->close();
+#endif
+}
+
+/**
+ * @brief Flushes and stops the active implementation's worker before QApplication teardown.
+ */
+void Console::Export::stopWorker()
+{
+#ifdef BUILD_COMMERCIAL
+  DataModel::FrameConsumer<ExportDataPtr>::stopWorker();
+#else
+  if (m_gplExporter)
+    m_gplExporter->stop();
 #endif
 }
 
@@ -327,6 +354,31 @@ void Console::Export::setupExternalConnections()
           this,
           &Console::Export::refreshLogFolder);
   refreshLogFolder();
+#else
+  connect(&Console::Handler::instance(),
+          &Console::Handler::deviceDataReady,
+          this,
+          &Console::Export::registerData);
+  connect(&DataModel::pipelineModules().frameBuilder,
+          &DataModel::FrameBuilder::sessionBoundary,
+          this,
+          [this](bool connected, bool paused) {
+            if (!connected || paused)
+              closeFile();
+          });
+  connect(&DataModel::pipelineModules().appState,
+          &AppState::operationModeChanged,
+          this,
+          &Console::Export::refreshGplLogFolder);
+  connect(&DataModel::pipelineModules().projectModel,
+          &DataModel::ProjectModel::titleChanged,
+          this,
+          &Console::Export::refreshGplLogFolder);
+  connect(&Core::services().workspaceManager,
+          &Misc::WorkspaceManager::pathChanged,
+          this,
+          &Console::Export::refreshGplLogFolder);
+  refreshGplLogFolder();
 #endif
 }
 
@@ -360,8 +412,6 @@ void Console::Export::setExportEnabled(const bool enabled)
   }
 
   setConsumerEnabled(false);
-#endif
-
   closeFile();
   m_exportEnabled.store(false, std::memory_order_relaxed);
 
@@ -369,6 +419,18 @@ void Console::Export::setExportEnabled(const bool enabled)
 
   if (enabled && !m_licenseReplay)
     Core::License::requestProFeature(QStringLiteral("console.export"));
+#else
+  m_exportRequested = enabled;
+  if (!m_gplExporter || m_gplExporter->enabled() == enabled)
+    return;
+
+  m_gplExporter->setEnabled(enabled);
+  m_exportEnabled.store(enabled, std::memory_order_relaxed);
+  if (m_persistSettings)
+    m_settings.setValue("ConsoleExport", enabled);
+
+  Q_EMIT enabledChanged();
+#endif
 }
 
 /**
@@ -393,8 +455,12 @@ void Console::Export::registerData(int deviceId, QStringView data)
 
   enqueueData(std::make_shared<ExportData>(deviceId, std::move(plain)));
 #else
-  (void)deviceId;
-  (void)data;
+  if (!exportEnabled() || data.isEmpty() || SerialStudio::isAnyPlayerOpen()
+      || API::handlerContext().connectionManager.paused())
+    return;
+
+  if (m_gplExporter)
+    m_gplExporter->append(deviceId, data);
 #endif
 }
 
@@ -428,5 +494,39 @@ void Console::Export::onWorkerOpenChanged()
   auto* worker = static_cast<ExportWorker*>(m_worker);
   m_isOpen.store(worker->isResourceOpen(), std::memory_order_relaxed);
   Q_EMIT openChanged();
+}
+#else
+/**
+ * @brief Snapshots a safe GPL log directory from the current workspace and project context.
+ */
+void Console::Export::refreshGplLogFolder()
+{
+  if (!m_gplExporter)
+    return;
+
+  auto& modules      = DataModel::pipelineModules();
+  const auto& title  = modules.projectModel.title();
+  const auto opMode  = modules.appState.operationMode();
+  QString subdirName = QStringLiteral("Console");
+  if (opMode == SerialStudio::QuickPlot)
+    subdirName = QStringLiteral("Quick Plot");
+  else if (opMode == SerialStudio::ProjectFile)
+    subdirName =
+      title.isEmpty() ? QStringLiteral("Untitled") : Misc::WorkspaceManager::sanitizeName(title);
+
+  auto& workspace = Core::services().workspaceManager;
+  const QDir base(workspace.path(QStringLiteral("Console")));
+  m_gplExporter->setOutputDirectory(base.filePath(subdirName));
+}
+
+/**
+ * @brief Mirrors the independent writer's open state onto the existing QML/API facade.
+ */
+void Console::Export::onGplOpenChanged()
+{
+  const bool open = m_gplExporter && m_gplExporter->isOpen();
+  const bool old  = m_isOpen.exchange(open, std::memory_order_relaxed);
+  if (old != open)
+    Q_EMIT openChanged();
 }
 #endif

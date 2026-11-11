@@ -296,6 +296,17 @@ qt_add_library(
   Console/Export.h
 )
 
+# Independent GPL console transcript writer. The commercial build keeps its existing
+# licensed worker inside Console/Export.cpp and never compiles these sources.
+if(NOT BUILD_COMMERCIAL)
+  target_sources(SerialStudioUi PRIVATE
+    Console/GplLogExport.cpp
+    Console/GplLogExport.h
+    Console/GplLogFiles.cpp
+    Console/GplLogFiles.h
+  )
+endif()
+
 add_library(SerialStudio::Ui ALIAS SerialStudioUi)
 
 #---------------------------------------------------------------------------------------------------

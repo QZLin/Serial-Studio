@@ -31,7 +31,7 @@ Runs on Windows, macOS, Linux, and Raspberry Pi.
 
 **Send commands back (Pro).** Buttons, toggles, sliders, knobs, text fields, and freeform output panels run JS templates that emit GCode, SCPI, Modbus, NMEA, CAN, or whatever your device speaks. Actions run on demand or on a timer.
 
-**Record and replay.** CSV export in the GPL build. MDF4 import/export, session recording (frames and raw bytes) into SQLite, PDF session reports, and XMODEM/YMODEM/ZMODEM file transfer are Pro. If the data belongs in your existing time-series stack instead of a local file, a live sink streams every frame into InfluxDB 2.x as line protocol (Pro).
+**Record and replay.** CSV export and per-device serial Console transcript logging in the GPL build. MDF4 import/export, session recording (frames and raw bytes) into SQLite, PDF session reports, and XMODEM/YMODEM/ZMODEM file transfer are Pro. If the data belongs in your existing time-series stack instead of a local file, a live sink streams every frame into InfluxDB 2.x as line protocol (Pro).
 
 **Automate it.** A TCP API on port 7777 with 360+ commands. A gRPC server on port 8888 mirrors the same command set with protobuf and live frame streaming. An MCP server wraps the same surface for Claude Desktop or any other MCP host.
 
@@ -243,7 +243,7 @@ On Windows the default generator is Visual Studio, which is multi-config: it ign
 
 You can also open `CMakeLists.txt` in Qt Creator or any CMake-aware IDE without extra setup.
 
-The default build is the GPLv3 edition. It includes the core: UART, network (TCP/UDP/WebSocket/HTTP), and BLE drivers, the Project Editor, Quick Plot and Console modes, the standard widgets (line plot, gauge, bar, GPS, FFT, accelerometer, gyroscope, compass, data grid, LED panel, terminal, multi-plot), Built-In, JavaScript, and Lua frame parsers, CSV export, and the local TCP/MCP API.
+The default build is the GPLv3 edition. It includes the core: UART, network (TCP/UDP/WebSocket/HTTP), and BLE drivers, the Project Editor, Quick Plot and Console modes, the standard widgets (line plot, gauge, bar, GPS, FFT, accelerometer, gyroscope, compass, data grid, LED panel, terminal, multi-plot), Built-In, JavaScript, and Lua frame parsers, CSV export, per-device Console transcript logging, and the local TCP/MCP API.
 
 Pro-only modules are not built into the GPL edition: MQTT (Sparkplug B included), Modbus, CAN Bus, OPC UA, Siemens S7comm, EtherNet/IP, IEC 60870-5-104, the InfluxDB sink, Audio, USB, HID, Process I/O, multi-source projects, the 3D Plot, Waterfall, Image View, and Canvas widgets, the output widgets, MDF4 import/export, the Historian, session reports, XMODEM/YMODEM/ZMODEM file transfer, the Modbus register-map and CAN DBC importers, and the AI Assistant. Some of those depend on proprietary Qt modules (Modbus, CAN Bus, MQTT, OPC UA); others are commercial-licensed code in this repository. Per-dataset transforms, Variables, and custom workspaces are Pro features too: the GPL edition cannot create or edit them, and a project that contains a transform or a Variables table needs Pro to connect (removing them is free). The notification log is also Pro. See [Pro vs Free Features](./doc/help/Pro-vs-Free.md) for the full matrix.
 

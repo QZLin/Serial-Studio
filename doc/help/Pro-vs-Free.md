@@ -87,6 +87,7 @@ The **Free** column in the tables below applies to both: the official binary wit
 | **Data Export** | | | |
 | | CSV Export | ✅ | ✅ |
 | | CSV Playback/Import | ✅ | ✅ |
+| | Console Transcript Logging | ✅ | ✅ |
 | | MDF4 (MF4) Export | ❌ | ✅ |
 | | MDF4 Playback | ❌ | ✅ |
 | | Historian (SQLite recording + reports) | ❌ | ✅ |

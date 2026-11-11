@@ -283,6 +283,10 @@ set(HEADERS
   src/SessionContext.h
 )
 
+if(NOT BUILD_COMMERCIAL)
+  list(APPEND SOURCES src/SelfTest/GplConsoleLogSuite.cpp)
+endif()
+
 set(QML_SOURCES
   qml/Commands/AppCommandBindings.qml
   qml/Commands/CommandModel.qml

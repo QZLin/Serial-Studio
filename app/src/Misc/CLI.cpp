@@ -36,6 +36,7 @@
 #include "API/Server.h"
 #include "AppState.h"
 #include "Benchmark/HotpathBenchmark.h"
+#include "Console/Export.h"
 #include "Core/AppInfo.h"
 #include "Core/Runtime.h"
 #include "Core/SerialStudio.h"
@@ -62,7 +63,6 @@
 #  include <QPushButton>
 #  include <QStringList>
 
-#  include "Console/Export.h"
 #  include "CSV/Export.h"
 #  include "Licensing/GuardSelfTest.h"
 #  include "Licensing/LemonSqueezy.h"
@@ -192,6 +192,7 @@ void CLI::registerOptions()
   m_parser.addOption(m_opts.benchmarkChannelsOpt);
   m_parser.addOption(m_opts.exitAfterOpt);
   m_parser.addOption(m_opts.simdLevelOpt);
+  m_parser.addOption(m_opts.consoleExportOpt);
 #ifdef SS_INAPP_TESTS
   m_parser.addOption(m_opts.selftestOpt);
   m_parser.addOption(m_opts.selftestSuiteOpt);
@@ -213,7 +214,6 @@ void CLI::registerCommercialOptions()
   m_parser.addOption(m_opts.csvExportOpt);
   m_parser.addOption(m_opts.mdfExportOpt);
   m_parser.addOption(m_opts.sessionExportOpt);
-  m_parser.addOption(m_opts.consoleExportOpt);
   m_parser.addOption(m_opts.actionsPanelOpt);
   m_parser.addOption(m_opts.fileTransmissionOpt);
   m_parser.addOption(m_opts.taskbarModeOpt);
@@ -956,6 +956,25 @@ void CLI::applyBusConfiguration()
   forThisRun([this] { CliBusConfig::apply(connectionManager, m_parser, m_opts); });
 }
 
+/**
+ * @brief Enables the serial Console transcript for this run when --console-export is present.
+ */
+void CLI::applyConsoleExportToggle()
+{
+  if (!m_parser.isSet(m_opts.consoleExportOpt))
+    return;
+
+#ifdef BUILD_COMMERCIAL
+  if (!deploymentPath().isEmpty())
+    return;
+#endif
+
+  forThisRun([] {
+    static auto& consoleExport = Console::Export::instance();
+    consoleExport.setExportEnabled(true);
+  });
+}
+
 //---------------------------------------------------------------------------------------------------
 // Commercial: shortcut/runtime/exports
 //---------------------------------------------------------------------------------------------------
@@ -1175,7 +1194,7 @@ void CLI::applyOperatorRuntimeSettings()
 }
 
 /**
- * @brief Enables CSV/MDF4/session/console exporters, for this run, when their CLI flags are set.
+ * @brief Enables the commercial CSV/MDF4/session exporters for this run when their flags are set.
  */
 void CLI::applyExportToggles()
 {
@@ -1193,11 +1212,6 @@ void CLI::applyExportToggles()
     if (m_parser.isSet(m_opts.sessionExportOpt)) {
       static auto& sessionsExport = Sessions::Export::instance();
       sessionsExport.setExportEnabled(true);
-    }
-
-    if (m_parser.isSet(m_opts.consoleExportOpt)) {
-      static auto& consoleExport = Console::Export::instance();
-      consoleExport.setExportEnabled(true);
     }
   });
 }

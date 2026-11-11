@@ -100,11 +100,11 @@ Switches that arm recording for the session. Each writes to a separate file or s
 | **CSV Spreadsheet** | A `.csv` of every parsed frame. | [CSV Export & Playback](CSV-Export-Playback.md) |
 | **Historian Database** **(Pro)** | A SQLite session in the database. | [Historian](Historian.md) |
 | **MDF4 Recording** **(Pro)** | An ASAM MDF4 measurement file. | [MDF4](MDF4.md) |
-| **Console Log** **(Pro)** | A transcript of the raw console stream. | |
+| **Console Log** | A UTF-8 transcript of the visible serial Console stream, split by device. | |
 
 For a project with two or more devices, the panel replaces the single-driver controls with an **Open Project Editor** button, because the source list is defined in the project. See [Devices](Devices.md).
 
-**Console Log file location.** Each transcript is written under the workspace's `Console/<subfolder>/` directory, where `<subfolder>` is the project title (ProjectFile mode), `Quick Plot`, or `Console` (Console Only mode). The file is named `yyyy_MMM_dd HH_mm_ss.txt`, with `_deviceN` appended for a multi-device Console Only session. ANSI escape sequences are stripped before writing, and the file is UTF-8 with a byte-order mark.
+**Console Log file location.** Each transcript is written under the workspace's `Console/<subfolder>/` directory, where `<subfolder>` is the project title (Project File mode), `Quick Plot`, or `Console` (Console Only mode). The file is named `yyyy_MMM_dd HH_mm_ss.txt`; `_deviceN` identifies a routed device, and a numeric suffix prevents a same-second session from overwriting an earlier file. ANSI escape sequences are stripped before writing, and the file is UTF-8 with a byte-order mark. The GPL build uses its own bounded background writer, so disk I/O does not block device ingestion.
 
 ## Dashboard Start menu
 
@@ -118,7 +118,7 @@ The Start menu opens from the leftmost taskbar button. It is the dashboard's mai
 | **Auto Layout** | <img src="cmd:dashboard.autoLayout" alt="Auto Layout" width="16" height="16"> | Toggles automatic tiling of dashboard windows. | Toggle. |
 | **Full Screen** | <img src="cmd:app.fullScreen" alt="Full Screen" width="16" height="16"> | Toggles the main window between full-screen and windowed. | Toggle. |
 | **Add External Window** | <img src="cmd:window.external" alt="Add External Window" width="16" height="16"> | Opens a second dashboard window (for a multi-monitor layout). | |
-| **Export** | <img src="icon:commands/export" alt="export" width="16" height="16"> | Submenu of recording toggles: CSV File, MDF4 File **(Pro)**, Console Transcript **(Pro)**, and Historian **(Pro)**. | Mirrors the Setup panel's export switches. |
+| **Export** | <img src="icon:commands/export" alt="export" width="16" height="16"> | Submenu of recording toggles: CSV File, Console Transcript, MDF4 File **(Pro)**, and Historian **(Pro)**. | Mirrors the Setup panel's export switches. |
 | **Tools** | <img src="cmd:dashboard.startMenu" alt="Start Menu" width="16" height="16"> | Submenu: Console, Notifications **(Pro)**, Clock, Stopwatch, Preferences, Sessions **(Pro)**, File Transmission **(Pro)**, AI Assistant **(Pro)**. | Toggles the utility widgets and opens the tool windows. |
 | **Help Center** | <img src="cmd:app.helpCenter" alt="Help Center" width="16" height="16"> | Opens this documentation. | |
 | **Pause / Resume** | <img src="cmd:io.pause" alt="Pause" width="16" height="16"> <img src="cmd:io.pause:checked" alt="Pause" width="16" height="16"> | Pauses or resumes data reception for the whole session. Pausing also closes any open CSV or MDF4 export file; resuming starts a new one. | Toggle. |

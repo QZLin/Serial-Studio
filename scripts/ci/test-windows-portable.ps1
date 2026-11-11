@@ -33,6 +33,29 @@ try {
     $env:PATH = "$env:SystemRoot\system32;$env:SystemRoot"
     $env:QT_QPA_PLATFORM = 'offscreen'
     $env:QT_FORCE_STDERR_LOGGING = '1'
+
+    $consoleOut = Join-Path $logDir 'console-log-selftest.stdout.log'
+    $consoleErr = Join-Path $logDir 'console-log-selftest.stderr.log'
+    $process = Start-Process -FilePath $exe `
+        -ArgumentList '--headless', '--selftest-suite', 'console-log' `
+        -WorkingDirectory $workingDir -PassThru -NoNewWindow `
+        -RedirectStandardOutput $consoleOut -RedirectStandardError $consoleErr
+    if (-not $process.WaitForExit(120000)) {
+        $process.Kill($true)
+        $process.WaitForExit()
+        throw 'The packaged Console log self-test timed out.'
+    }
+    $process.WaitForExit()
+    $consoleText = (Get-Content $consoleOut, $consoleErr -Raw) -join "`n"
+    Write-Host $consoleText
+    if ($process.ExitCode -ne 0) {
+        throw "The packaged Console log self-test exited with $($process.ExitCode)."
+    }
+    if ($consoleText -notmatch '\[selftest\]\s+console-log:\s+PASS\s+\([1-9][0-9]* checks, 0 failures\)') {
+        throw 'The Console log self-test did not report a real PASS verdict.'
+    }
+    $process = $null
+
     $out = Join-Path $logDir 'qml-selftest.stdout.log'
     $err = Join-Path $logDir 'qml-selftest.stderr.log'
     $process = Start-Process -FilePath $exe `
@@ -88,9 +111,9 @@ try {
     if ($guiText -match 'QQmlApplicationEngine failed to load component|module "[^"]+" is not installed') {
         throw 'The GUI reported a missing QML module or failed root component.'
     }
-    'PORTABLE_QML_PASS=1; PORTABLE_GUI_PASS=1; SDK_ON_PATH=0' |
+    'PORTABLE_CONSOLE_LOG_PASS=1; PORTABLE_QML_PASS=1; PORTABLE_GUI_PASS=1; SDK_ON_PATH=0' |
         Set-Content (Join-Path $logDir 'portable-smoke-result.log') -Encoding ascii
-    Write-Host 'Portable ZIP passed the QML and native GUI startup tests without the Qt SDK.'
+    Write-Host 'Portable ZIP passed Console logging, QML and native GUI tests without the Qt SDK.'
 } finally {
     if ($null -ne $process -and -not $process.HasExited) {
         $process.Kill($true)

@@ -60,6 +60,9 @@ struct ExportData {
 typedef std::shared_ptr<ExportData> ExportDataPtr;
 
 class Export;
+#ifndef BUILD_COMMERCIAL
+class GplLogExport;
+#endif
 
 #ifdef BUILD_COMMERCIAL
 /**
@@ -136,6 +139,7 @@ public:
 
 public slots:
   void closeFile();
+  void stopWorker();
   void setupExternalConnections();
   void setExportEnabled(const bool enabled);
   void setSettingsPersistent(const bool persistent);
@@ -151,6 +155,9 @@ private slots:
 #ifdef BUILD_COMMERCIAL
   void refreshLogFolder();
   void onWorkerOpenChanged();
+#else
+  void refreshGplLogFolder();
+  void onGplOpenChanged();
 #endif
 
 private:
@@ -161,6 +168,9 @@ private:
   bool m_exportRequested;
   bool m_licenseReplay;
   Core::Bus::MessageBus* m_bus;
+#ifndef BUILD_COMMERCIAL
+  std::unique_ptr<GplLogExport> m_gplExporter;
+#endif
   Core::Bus::Subscription m_licenseWatch;
 };
 }  // namespace Console

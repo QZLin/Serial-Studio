@@ -65,7 +65,10 @@ static constexpr detail::SuiteEntry kSuites[] = {
  *        explicitly with --selftest-suite; a bare --selftest never reaches them.
  */
 static constexpr detail::SuiteEntry kPostRootSuites[] = {
-  {"qml", &runQmlInstantiationSuite},
+  {        "qml", &runQmlInstantiationSuite},
+#ifndef BUILD_COMMERCIAL
+  {"console-log",    &runGplConsoleLogSuite},
+#endif
 };
 
 //---------------------------------------------------------------------------------------------------

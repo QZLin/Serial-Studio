@@ -26,6 +26,7 @@ Options marked **(Pro)** are available only in commercial builds.
 | `-n`, `--points` | `count` | Set the number of data points per plot. |
 | `--exit-after` | `seconds` | Quit gracefully after the given number of seconds (CI runs, PGO training). |
 | `--simd` | `level` | Pin the vector kernels to `auto`, `scalar`, `sse4`, `avx2` or `neon` for this run only. The value is not saved, and an unknown or unsupported level falls back to `auto` and says so in the application log. See [the acquisition pipeline](Data-Hotpath.md#simd-instruction-set). |
+| `--console-export` | | Enable serial Console transcript logging for this run. Files are written below the workspace's `Console/` directory. |
 
 ## Devices
 
@@ -71,7 +72,6 @@ pipeline.
 | `--csv-export` | | Enable CSV export on startup. |
 | `--mdf-export` | | Enable MDF4 export on startup. |
 | `--session-export` | | Enable Historian recording on startup. |
-| `--console-export` | | Enable console log export on startup. |
 | `--actions-panel` | | Show the actions panel in operator runtime mode. |
 | `--file-transmission` | | Allow the File Transmission dialog in operator runtime mode. |
 | `--taskbar-mode` | `mode` | Operator taskbar visibility: `shown`, `autohide`, or `hidden`. |

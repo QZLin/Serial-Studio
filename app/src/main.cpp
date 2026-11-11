@@ -165,6 +165,8 @@ static int runConfiguredSession(QApplication& app,
   if (!cli.applyProjectAndAutoConnect(app))
     return EXIT_FAILURE;
 
+  cli.applyConsoleExportToggle();
+
 #ifdef BUILD_COMMERCIAL
   if (cli.runtimeMode())
     cli.applyOperatorRuntimeSettings();

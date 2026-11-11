@@ -40,6 +40,8 @@ WebEngine、串口、BLE、网络、项目编辑器和 GPL 版可用功能。Pro
 - 生成便携 ZIP 并通过 ZIP 完整性检查。
 - 将该 ZIP 解压到包含空格的全新目录，从一个空工作目录运行。
 - 清除 Qt/QML 环境变量，并将 PATH 限制为 Windows 系统目录。
+- 运行独立 GPL Console 日志单元测试：ANSI 清理、UTF-8 BOM、按设备分文件和防覆盖。
+- 打包程序实际创建并核验一份 Console 文本日志。
 - 打包程序的 QML 自测实际报告 PASS，且原生 Windows 界面成功创建并持续运行。
 
 这些检查验证打包和启动，不代替真实串口/BLE 硬件测试。
@@ -55,6 +57,6 @@ Qt 和 FetchContent 依赖的源码位置见程序包中的说明以及仓库 CM
 - [package-windows-gpl3.ps1](../scripts/ci/package-windows-gpl3.ps1)：依赖检查、
   程序 ZIP、校验和、许可证和源码归档。
 - [test-windows-portable.ps1](../scripts/ci/test-windows-portable.ps1)：解压后
-  QML/GUI 启动测试。
+  Console 日志、QML 与 GUI 启动测试。
 
 以上两个 PowerShell 脚本带有 GitHub Actions runner 限制，不用于本地构建。
