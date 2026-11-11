@@ -126,7 +126,6 @@ jobs:
             -DSS_UNITY_BUILD=ON `
             -DSS_UNITY_BATCH_SIZE=32 `
             -DSS_INAPP_TESTS=ON `
-            -DSS_BUILD_TESTS=ON `
             -DSS_PACKAGE_TYPE=portable `
             "-DSS_BUILD_COMMIT=$env:GITHUB_SHA" `
             -DPRODUCTION_OPTIMIZATION=ON `
@@ -134,14 +133,35 @@ jobs:
             -DENABLE_PGO=OFF
           if ($LASTEXITCODE -ne 0) { throw 'CMake configure failed' }
 
+      - name: Configure Console log unit test
+        env:
+          CFLAGS: /DWINVER=0x0A00 /D_WIN32_WINNT=0x0A00
+          CXXFLAGS: /DWINVER=0x0A00 /D_WIN32_WINNT=0x0A00
+        run: |
+          cmake -S . -B build-console-test -G Ninja `
+            -DCMAKE_C_COMPILER=clang-cl `
+            -DCMAKE_CXX_COMPILER=clang-cl `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DBUILD_GPL3=ON `
+            -DBUILD_COMMERCIAL=OFF `
+            -DSS_BUILD_TESTS=ON `
+            -DSS_ENABLE_OPCUA=OFF `
+            -DSS_ENABLE_EIP=OFF `
+            -DSS_USE_MIMALLOC=OFF `
+            -DENABLE_GRPC=OFF `
+            -DWITH_WEBENGINE=OFF
+          if ($LASTEXITCODE -ne 0) { throw 'Console log test configure failed' }
+
       - name: Build application and Console log unit test on GitHub runner
         run: |
-          cmake --build build --config Release --target $env:EXECUTABLE tst_gpl_console_log
-          if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
+          cmake --build build --config Release --target $env:EXECUTABLE
+          if ($LASTEXITCODE -ne 0) { throw 'Application build failed' }
+          cmake --build build-console-test --config Release --target tst_gpl_console_log
+          if ($LASTEXITCODE -ne 0) { throw 'Console log unit-test build failed' }
 
       - name: Run Console log unit test
         run: |
-          ctest --test-dir build --output-on-failure -R '^tst_gpl_console_log$'
+          ctest --test-dir build-console-test --output-on-failure -R '^tst_gpl_console_log$'
           if ($LASTEXITCODE -ne 0) { throw 'Console log unit test failed' }
 
       - name: Deploy executable, Qt libraries and runtime
