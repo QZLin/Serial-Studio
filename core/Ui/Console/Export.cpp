@@ -455,8 +455,7 @@ void Console::Export::registerData(int deviceId, QStringView data)
 
   enqueueData(std::make_shared<ExportData>(deviceId, std::move(plain)));
 #else
-  if (!exportEnabled() || data.isEmpty() || SerialStudio::isAnyPlayerOpen()
-      || API::handlerContext().connectionManager.paused())
+  if (!exportEnabled() || data.isEmpty() || API::handlerContext().connectionManager.paused())
     return;
 
   if (m_gplExporter)
